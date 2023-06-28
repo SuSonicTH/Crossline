@@ -17,8 +17,9 @@ pub fn build(b: *std.Build) void {
 }
 
 pub fn link(b: *std.Build, step: *std.build.CompileStep, options: Options) void {
-    const lua = buildLib(b, step.target, step.optimize, options);
-    step.linkLibrary(lua);
+    const lib = buildLib(b, step.target, step.optimize, options);
+    step.addIncludePath(dir());
+    step.linkLibrary(lib);
 }
 
 fn dir() []const u8 {
@@ -44,7 +45,7 @@ fn buildLib(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin.Mo
         std.fs.path.join(b.allocator, &.{ dir(), "crossline.c" }) catch unreachable,
     }, &flags);
     lib.linkLibC();
-    b.installLibFile(std.fs.path.join(b.allocator, &.{ dir(), "crossline.h" }) catch unreachable, "crossline.h");
+
     return lib;
 }
 
