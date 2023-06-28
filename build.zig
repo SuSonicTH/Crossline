@@ -10,7 +10,6 @@ pub fn build(b: *std.Build) void {
     const lib = buildLib(b, b.standardTargetOptions(.{}), b.standardOptimizeOption(.{}), .{});
 
     b.installArtifact(lib);
-    b.installLibFile("crossline.h", "crossline.h");
 
     exeStep(b, lib, "example");
     exeStep(b, lib, "example2");
@@ -20,6 +19,10 @@ pub fn build(b: *std.Build) void {
 pub fn link(b: *std.Build, step: *std.build.CompileStep, options: Options) void {
     const lua = buildLib(b, step.target, step.optimize, options);
     step.linkLibrary(lua);
+}
+
+fn dir() []const u8 {
+    return std.fs.path.dirname(@src().file) orelse ".";
 }
 
 fn buildLib(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin.Mode, options: Options) *std.build.CompileStep {
@@ -38,10 +41,10 @@ fn buildLib(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin.Mo
     };
 
     lib.addCSourceFiles(&[_][]const u8{
-        "./crossline.c",
+        std.fs.path.join(b.allocator, &.{ dir(), "crossline.c" }) catch unreachable,
     }, &flags);
     lib.linkLibC();
-
+    b.installLibFile(std.fs.path.join(b.allocator, &.{ dir(), "crossline.h" }) catch unreachable, "crossline.h");
     return lib;
 }
 
