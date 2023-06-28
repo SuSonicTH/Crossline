@@ -2,17 +2,12 @@ const std = @import("std");
 
 const flags = [_][]const u8{"-std=gnu99"};
 
-pub fn build(b: *std.Build) void {
-    const lib = b.addStaticLibrary(.{
-        .name = "crossline",
-        .target = b.standardTargetOptions(.{}),
-        .optimize = b.standardOptimizeOption(.{}),
-    });
+pub const Options = struct {
+    shared: bool = false,
+};
 
-    lib.addCSourceFiles(&[_][]const u8{
-        "./crossline.c",
-    }, &flags);
-    lib.linkLibC();
+pub fn build(b: *std.Build) void {
+    const lib = buildLib(b, b.standardTargetOptions(.{}), b.standardOptimizeOption(.{}), .{});
 
     b.installArtifact(lib);
     b.installLibFile("crossline.h", "crossline.h");
@@ -20,6 +15,34 @@ pub fn build(b: *std.Build) void {
     exeStep(b, lib, "example");
     exeStep(b, lib, "example2");
     exeStep(b, lib, "example_sql");
+}
+
+pub fn link(b: *std.Build, step: *std.build.CompileStep, options: Options) void {
+    const lua = buildLib(b, step.target, step.optimize, options);
+    step.linkLibrary(lua);
+}
+
+fn buildLib(b: *std.Build, target: std.zig.CrossTarget, optimize: std.builtin.Mode, options: Options) *std.build.CompileStep {
+    const lib = brk: {
+        if (options.shared) break :brk b.addSharedLibrary(.{
+            .name = "crossline",
+            .target = target,
+            .optimize = optimize,
+        });
+
+        break :brk b.addStaticLibrary(.{
+            .name = "crossline",
+            .target = target,
+            .optimize = optimize,
+        });
+    };
+
+    lib.addCSourceFiles(&[_][]const u8{
+        "./crossline.c",
+    }, &flags);
+    lib.linkLibC();
+
+    return lib;
 }
 
 fn exeStep(b: *std.Build, lib: *std.build.CompileStep, comptime name: []const u8) void {
