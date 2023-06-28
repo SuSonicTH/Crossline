@@ -5,3 +5,5 @@
 *.txt
 example
 example_sql
+zig-cache/*
+zig-out/*
